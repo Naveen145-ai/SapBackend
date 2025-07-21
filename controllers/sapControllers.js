@@ -1,32 +1,28 @@
-const SAPSubmission = require('../models/sapForm');
+const SAPForm = require('../models/SAPForm');
 
-const submitSAPForm = async (req, res) => {
+exports.submitSAPForm = async (req, res) => {
   try {
     const { name, email, activity } = req.body;
 
-    // Make sure file is uploaded
-    if (!req.file || !req.file.path) {
-      return res.status(400).json({ error: 'File upload failed or missing' });
+    if (!req.file) {
+      return res.status(400).json({ error: "File upload failed or missing" });
     }
 
-    const newSubmission = new SAPSubmission({
+    const newForm = new SAPForm({
       name,
       email,
       activity,
-      proofUrl: req.file.path, // Cloudinary URL
+      proofUrl: `uploads/${req.file.filename}`,
     });
 
-    await newSubmission.save(); // Saves to MongoDB Atlas
+    const savedForm = await newForm.save();
 
     res.status(201).json({
       success: true,
-      message: 'SAP form submitted successfully',
-      data: newSubmission,
+      message: "SAP form submitted successfully",
+      data: savedForm,
     });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Server error' });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error", details: err.message });
   }
 };
-
-module.exports = { submitSAPForm };

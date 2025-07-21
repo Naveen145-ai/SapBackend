@@ -1,4 +1,4 @@
-// config/cloudinary.js
+/*// config/cloudinary.js
 const cloudinaryModule = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const dotenv = require('dotenv');
@@ -23,3 +23,4 @@ const storage = new CloudinaryStorage({
 });
 
 module.exports = { cloudinary, storage }; // ✅ named exports
+*/
