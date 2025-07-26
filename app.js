@@ -5,6 +5,7 @@ const path = require('path');
 
 const connectDataBase = require('./config/connectDataBase');
 const sapRoutes = require('./routes/sapRoutes');
+const mentorRoutes = require('./routes/mentorAuthRoutes');
 
 dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
@@ -21,7 +22,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/sap', sapRoutes);
-
+app.use('/api/sap',mentorRoutes);
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
