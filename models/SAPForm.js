@@ -6,6 +6,7 @@ const SAPFormSchema = new mongoose.Schema({
   activity: String,
   category: { type: String, enum: ['activity', 'fullForm'], default: 'activity' },
   proofUrl: String,
+  proofUrls: [{ type: String }],
   mentorEmail: String, // 👈 this links to the mentor
   details: mongoose.Schema.Types.Mixed, // flexible JSON for full form
   status: {

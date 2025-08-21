@@ -5,7 +5,7 @@ const upload = require('../middleware/upload');
 const SAPForm = require('../models/SAPForm'); // ✅ Use CommonJS
 
 router.post('/submit', upload.single('proof'), submitSAPForm);
-router.post('/submit-full', submitFullForm);
+router.post('/submit-full', upload.array('proofs', 20), submitFullForm);
 
 router.get('/submissions/:email', async (req, res) => {
   try {
