@@ -5,7 +5,8 @@ const userAuth = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     confirmPassword: { type: String, required: true },
-    role: { type: String, enum: ['mentor', 'mentee'], required: true } // ✅ ADD THIS
+    role: { type: String, enum: ['mentor', 'mentee'], required: true }, // ✅ ADD THIS
+    sapPoints: { type: Number, default: 0 }
 });
 
 const User = mongoose.model('User', userAuth);

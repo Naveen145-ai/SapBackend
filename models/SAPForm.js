@@ -11,10 +11,13 @@ const SAPFormSchema = new mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending',
   },
+  marksAwarded: { type: Number, default: 0 },
+  decisionNote: { type: String },
   submittedAt: {
     type: Date,
     default: Date.now,
   },
+  mentorDecisionAt: { type: Date }
 });
 
 module.exports = mongoose.model('SAPForm', SAPFormSchema);
