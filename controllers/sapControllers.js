@@ -30,7 +30,8 @@ exports.submitSAPForm = async (req, res) => {
       email,
       activity,
       proofUrl: `/uploads/${proof}`,
-      mentorEmail: mentor.email
+      mentorEmail: mentor.email,
+      category: 'activity'
     });
 
     await newForm.save();
@@ -59,6 +60,60 @@ exports.submitSAPForm = async (req, res) => {
 
   } catch (error) {
     console.error('Error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.submitFullForm = async (req, res) => {
+  try {
+    const { studentInfo, tableData, mentorEmail, email } = req.body; // email is student email
+
+    if (!mentorEmail || !email) {
+      return res.status(400).json({ error: 'mentorEmail and student email are required' });
+    }
+
+    // Validate mentor email
+    let mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentor) {
+      const mentorDoc = await Mentor.findOne({ email: mentorEmail });
+      if (mentorDoc) {
+        mentor = { email: mentorDoc.email };
+      }
+    }
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor email not found' });
+    }
+
+    // Create a record with full details JSON
+    const record = await SAPForm.create({
+      name: studentInfo?.studentName || 'Unknown',
+      email,
+      activity: 'Full SAP Form',
+      category: 'fullForm',
+      mentorEmail: mentor.email,
+      details: { studentInfo, tableData }
+    });
+
+    // Email mentor
+    try {
+      await sendEmail({
+        to: mentor.email,
+        subject: `New SAP full form from ${studentInfo?.studentName || email}`,
+        html: `
+          <p>You have a new full SAP form to review.</p>
+          <ul>
+            <li>Student: <strong>${studentInfo?.studentName || email}</strong> (${email})</li>
+          </ul>
+          <p>Login to your mentor dashboard to review and mark.</p>
+        `
+      });
+    } catch (e) {
+      console.error('Email error:', e.message);
+    }
+
+    res.status(201).json({ message: 'Full form submitted to mentor', id: record._id });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 };
