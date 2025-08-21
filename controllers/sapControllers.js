@@ -87,3 +87,55 @@ exports.submitFullForm = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.submitEventsForm = async (req, res) => {
+  try {
+    const { mentorEmail, email, name, events: eventsStr } = req.body;
+    if (!mentorEmail || !email) {
+      return res.status(400).json({ error: 'mentorEmail and student email are required' });
+    }
+
+    // Validate mentor
+    let mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentor) {
+      const mentorDoc = await Mentor.findOne({ email: mentorEmail });
+      if (mentorDoc) mentor = { email: mentorDoc.email };
+    }
+    if (!mentor) return res.status(404).json({ error: 'Mentor email not found' });
+
+    const eventsInput = eventsStr ? JSON.parse(eventsStr) : [];
+
+    // Map files by fieldname e.g., proofs[paperPresentation]
+    const files = Array.isArray(req.files) ? req.files : [];
+    const proofMap = {};
+    for (const f of files) {
+      const m = f.fieldname.match(/^proofs\[(.+)\]$/);
+      if (m) {
+        const key = m[1];
+        if (!proofMap[key]) proofMap[key] = [];
+        proofMap[key].push(`/uploads/${f.filename}`);
+      }
+    }
+
+    const events = eventsInput.map(ev => ({
+      key: ev.key,
+      title: ev.title,
+      values: ev.values,
+      proofUrls: proofMap[ev.key] || []
+    }));
+
+    const record = await SAPForm.create({
+      name: name || 'Unknown',
+      email,
+      activity: 'Events SAP Form',
+      category: 'eventsForm',
+      mentorEmail: mentor.email,
+      events
+    });
+
+    res.status(201).json({ message: 'Events submitted', id: record._id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
