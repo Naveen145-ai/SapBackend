@@ -8,7 +8,7 @@ const User = require('../models/userAuthModel');
 router.post('/submit', upload.single('proof'), submitSAPForm);
 router.post('/submit-full', upload.array('proofs', 20), submitFullForm);
 router.post('/submit-events', upload.any(), submitEventsForm);
-router.post('/submit-individual-event', upload.array('files'), submitIndividualEvent);
+router.post('/submit-individual-event', upload.any(), submitIndividualEvent);
 router.get('/student-marks/:email', getStudentMarks);
 
 // User authentication endpoints

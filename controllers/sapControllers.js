@@ -105,11 +105,12 @@ exports.submitEventsForm = async (req, res) => {
 
     const eventsInput = eventsStr ? JSON.parse(eventsStr) : [];
 
-    // Map files by fieldname e.g., proofs[paperPresentation]
+    // Map files by fieldname e.g., proofs[paperPresentation] or files[paperPresentation]
     const files = Array.isArray(req.files) ? req.files : [];
     const proofMap = {};
     for (const f of files) {
-      const m = f.fieldname.match(/^proofs\[(.+)\]$/);
+      // Support both proofs[key] and files[key] patterns
+      const m = f.fieldname.match(/^(?:proofs|files)\[(.+)\]$/) || f.fieldname.match(/^(.+)$/);
       if (m) {
         const key = m[1];
         if (!proofMap[key]) proofMap[key] = [];
@@ -163,6 +164,9 @@ exports.submitIndividualEvent = async (req, res) => {
     // Handle file uploads for this specific event
     const files = Array.isArray(req.files) ? req.files : [];
     const proofUrls = files.map(f => `/uploads/${f.filename}`);
+    
+    console.log('Files received:', files.length);
+    console.log('Event data:', parsedEventData);
 
     // Check if student already has a submission for this event
     let existingSubmission = await SAPForm.findOne({
