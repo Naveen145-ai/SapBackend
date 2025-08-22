@@ -64,4 +64,93 @@ router.put('/update-status/:id', async (req, res) => {
   }
 });
 
+// Update individual event marks
+router.put('/update-event-marks/:id', async (req, res) => {
+  try {
+    const submissionId = req.params.id;
+    const { eventKey, eventMarks, eventNote } = req.body;
+
+    const submission = await SAPForm.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    // Find and update the specific event
+    const eventIndex = submission.events.findIndex(e => e.key === eventKey);
+    if (eventIndex === -1) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    submission.events[eventIndex].mentorMarks = eventMarks;
+    submission.events[eventIndex].mentorNote = eventNote;
+    submission.events[eventIndex].status = 'reviewed';
+
+    await submission.save();
+
+    // Calculate total marks for the student across all events
+    const totalMarks = submission.events.reduce((total, event) => {
+      if (event.mentorMarks) {
+        const eventTotal = Object.values(event.mentorMarks).reduce((sum, mark) => sum + (Number(mark) || 0), 0);
+        return total + eventTotal;
+      }
+      return total;
+    }, 0);
+
+    // Update student's SAP points
+    await User.updateOne(
+      { email: submission.email, role: 'mentee' },
+      { $inc: { sapPoints: totalMarks } }
+    );
+
+    res.json({ message: 'Event marks updated successfully', totalMarks });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Generate SAP marks report
+router.get('/sap-report/:mentorEmail', async (req, res) => {
+  try {
+    const { mentorEmail } = req.params;
+    
+    const submissions = await SAPForm.find({ mentorEmail }).populate('email', 'name');
+    
+    const report = {};
+    
+    submissions.forEach(submission => {
+      const studentEmail = submission.email;
+      
+      if (!report[studentEmail]) {
+        report[studentEmail] = {
+          studentName: submission.name,
+          studentEmail,
+          events: {},
+          totalMarks: 0
+        };
+      }
+      
+      if (submission.category === 'individualEvents' && submission.events) {
+        submission.events.forEach(event => {
+          if (event.status === 'reviewed' && event.mentorMarks) {
+            const eventTotal = Object.values(event.mentorMarks).reduce((sum, mark) => sum + (Number(mark) || 0), 0);
+            report[studentEmail].events[event.key] = {
+              title: event.title,
+              marks: eventTotal,
+              details: event.mentorMarks,
+              note: event.mentorNote || ''
+            };
+            report[studentEmail].totalMarks += eventTotal;
+          }
+        });
+      }
+    });
+    
+    res.json(report);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
