@@ -16,7 +16,12 @@ router.post('/user-login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const user = await User.findOne({ email, role: 'mentee' });
+    console.log('Login attempt for email:', email);
+    
+    // Check if user exists with any role
+    const user = await User.findOne({ email });
+    console.log('User found:', user ? `Yes (role: ${user.role})` : 'No');
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -26,7 +31,15 @@ router.post('/user-login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    res.json({ message: 'Login successful', user: { email: user.email, name: user.name } });
+    // Allow login regardless of role - frontend will handle routing
+    res.json({ 
+      message: 'Login successful', 
+      user: { 
+        email: user.email, 
+        name: user.name, 
+        role: user.role 
+      } 
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -35,7 +48,9 @@ router.post('/user-login', async (req, res) => {
 
 router.post('/user-signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
+    
+    console.log('Signup attempt:', { name, email, role: 'mentee' });
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -45,16 +60,18 @@ router.post('/user-signup', async (req, res) => {
     const newUser = new User({
       name,
       email,
-      password, // In production, hash this with bcrypt
+      password,
+      confirmPassword: confirmPassword || password, // Handle missing confirmPassword
       role: 'mentee',
       sapPoints: 0
     });
     
-    await newUser.save();
+    const savedUser = await newUser.save();
+    console.log('User created successfully:', savedUser.email, 'Role:', savedUser.role);
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 });
 
