@@ -4,14 +4,17 @@ const EventSchema = new mongoose.Schema({
   key: String,
   title: String,
   values: mongoose.Schema.Types.Mixed,
-  proofUrls: [{ type: String }]
+  proofUrls: [{ type: String }],
+  mentorMarks: mongoose.Schema.Types.Mixed,
+  mentorNote: String,
+  status: { type: String, enum: ['pending', 'reviewed', 'rejected'], default: 'pending' }
 }, { _id: false });
 
 const SAPFormSchema = new mongoose.Schema({
   name: String,
   email: String, // mentee email
   activity: String,
-  category: { type: String, enum: ['activity', 'fullForm', 'eventsForm'], default: 'activity' },
+  category: { type: String, enum: ['activity', 'fullForm', 'eventsForm', 'individualEvents'], default: 'activity' },
   proofUrl: String,
   proofUrls: [{ type: String }],
   mentorEmail: String, // 👈 this links to the mentor
