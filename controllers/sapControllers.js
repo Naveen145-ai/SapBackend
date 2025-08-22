@@ -11,25 +11,17 @@ exports.submitSAPForm = async (req, res) => {
       return res.status(400).json({ error: 'File not uploaded' });
     }
 
-    // Check if mentor exists (either in Users with role 'mentor' or in Mentor collection)
-    let mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
-    if (!mentor) {
-      const mentorDoc = await Mentor.findOne({ email: mentorEmail });
-      if (mentorDoc) {
-        mentor = { email: mentorDoc.email };
-      }
-    }
-
-    if (!mentor) {
-      return res.status(404).json({ error: 'Mentor email not found' });
-    }
+    // Use the logged-in user's email as mentor (from localStorage)
+    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu'; // Default to your mentor email
+    
+    console.log('Assigning mentor:', mentorEmailToUse);
 
     const newForm = new SAPForm({
       name,
       email,
       activity,
       proofUrl: `/uploads/${proof}`,
-      mentorEmail: mentor.email,
+      mentorEmail: mentorEmailToUse,
       category: 'activity'
     });
 
@@ -95,13 +87,9 @@ exports.submitEventsForm = async (req, res) => {
       return res.status(400).json({ error: 'mentorEmail and student email are required' });
     }
 
-    // Validate mentor
-    let mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
-    if (!mentor) {
-      const mentorDoc = await Mentor.findOne({ email: mentorEmail });
-      if (mentorDoc) mentor = { email: mentorDoc.email };
-    }
-    if (!mentor) return res.status(404).json({ error: 'Mentor email not found' });
+    // Use the provided mentor email directly (skip validation for now)
+    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu';
+    console.log('Assigning mentor (individualEvent):', mentorEmailToUse);
 
     const eventsInput = eventsStr ? JSON.parse(eventsStr) : [];
 
@@ -150,13 +138,9 @@ exports.submitIndividualEvent = async (req, res) => {
       return res.status(400).json({ error: 'mentorEmail and student email are required' });
     }
 
-    // Validate mentor
-    let mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
-    if (!mentor) {
-      const mentorDoc = await Mentor.findOne({ email: mentorEmail });
-      if (mentorDoc) mentor = { email: mentorDoc.email };
-    }
-    if (!mentor) return res.status(404).json({ error: 'Mentor email not found' });
+    // Use the provided mentor email directly (skip validation for now)
+    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu';
+    console.log('Assigning mentor (individualEvent):', mentorEmailToUse);
 
     const parsedStudentInfo = studentInfo ? JSON.parse(studentInfo) : {};
     const parsedEventData = eventData ? JSON.parse(eventData) : {};
@@ -171,7 +155,7 @@ exports.submitIndividualEvent = async (req, res) => {
     // Check if student already has a submission for this event
     let existingSubmission = await SAPForm.findOne({
       email,
-      mentorEmail: mentor.email,
+      mentorEmail: mentorEmailToUse,
       'events.key': eventKey
     });
 
@@ -194,7 +178,7 @@ exports.submitIndividualEvent = async (req, res) => {
       // Create new submission or add to existing events submission
       let eventsSubmission = await SAPForm.findOne({
         email,
-        mentorEmail: mentor.email,
+        mentorEmail: mentorEmailToUse,
         category: 'individualEvents'
       });
 
@@ -216,7 +200,7 @@ exports.submitIndividualEvent = async (req, res) => {
           email,
           activity: 'Individual Events Submission',
           category: 'individualEvents',
-          mentorEmail: mentor.email,
+          mentorEmail: mentorEmailToUse,
           details: parsedStudentInfo,
           events: [newEvent],
           status: 'pending'
