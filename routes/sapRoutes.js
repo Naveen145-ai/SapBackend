@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { submitSAPForm, submitFullForm, submitEventsForm, submitIndividualEvent, getStudentMarks } = require('../controllers/sapControllers');
+const { submitSAPForm, submitFullForm, submitEventsForm, submitIndividualEvent, getStudentMarks, getSAPSubmissionsForMentor, updateSAPMarks } = require('../controllers/sapControllers');
 const upload = require('../middleware/upload');
 const SAPForm = require('../models/SAPForm');
 const User = require('../models/userAuthModel'); 
@@ -83,5 +83,9 @@ router.get('/submissions/:email', async (req, res) => {
     res.status(500).json({ message: 'Error fetching submissions' });
   }
 });
+
+// New mentor endpoints for SAP marking
+router.get('/mentor/sap-submissions/:mentorEmail', getSAPSubmissionsForMentor);
+router.put('/mentor/update-sap-marks/:submissionId', updateSAPMarks);
 
 module.exports = router;

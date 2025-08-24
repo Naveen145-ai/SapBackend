@@ -228,3 +228,48 @@ exports.getStudentMarks = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Get SAP form submissions for mentor marking
+exports.getSAPSubmissionsForMentor = async (req, res) => {
+  try {
+    const { mentorEmail } = req.params;
+    
+    const submissions = await SAPForm.find({ 
+      mentorEmail: decodeURIComponent(mentorEmail),
+      category: 'fullForm'
+    }).sort({ submittedAt: -1 });
+    
+    res.json(submissions);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update SAP marks by mentor
+exports.updateSAPMarks = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { marks, mentorEmail } = req.body;
+    
+    const submission = await SAPForm.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+    
+    if (submission.mentorEmail !== mentorEmail) {
+      return res.status(403).json({ message: 'Unauthorized to mark this submission' });
+    }
+    
+    submission.mentorMarks = marks;
+    submission.status = 'reviewed';
+    submission.mentorDecisionAt = new Date();
+    
+    await submission.save();
+    
+    res.json({ message: 'Marks updated successfully', submission });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
