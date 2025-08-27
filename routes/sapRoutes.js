@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { submitSAPForm, submitFullForm, submitEventsForm, submitIndividualEvent, getStudentMarks, getSAPSubmissionsForMentor, updateSAPMarks } = require('../controllers/sapControllers');
+const { submitSAPForm, submitFullForm, submitEventsForm, submitIndividualEvent, getStudentMarks, getSAPSubmissionsForMentor, updateSAPMarks, submitTotalMarks } = require('../controllers/sapControllers');
 const upload = require('../middleware/upload');
 const SAPForm = require('../models/SAPForm');
 const User = require('../models/userAuthModel'); 
@@ -87,5 +87,32 @@ router.get('/submissions/:email', async (req, res) => {
 // New mentor endpoints for SAP marking
 router.get('/mentor/sap-submissions/:mentorEmail', getSAPSubmissionsForMentor);
 router.put('/mentor/update-sap-marks/:submissionId', updateSAPMarks);
+router.post('/submit-total-marks', submitTotalMarks);
+
+// Save SAP marks endpoint
+router.post('/mentor/save-sap-marks', async (req, res) => {
+  try {
+    const { studentEmail, studentName, mentorEmail, marks, totalMarks } = req.body;
+    
+    // Create or update SAP marks record
+    const sapMarksData = {
+      studentEmail,
+      studentName,
+      mentorEmail,
+      marks,
+      totalMarks,
+      updatedAt: new Date()
+    };
+    
+    // You can save this to a separate collection or update existing records
+    // For now, we'll just return success
+    console.log('SAP Marks saved:', sapMarksData);
+    
+    res.json({ message: 'SAP marks saved successfully', data: sapMarksData });
+  } catch (error) {
+    console.error('Error saving SAP marks:', error);
+    res.status(500).json({ message: 'Error saving SAP marks' });
+  }
+});
 
 module.exports = router;

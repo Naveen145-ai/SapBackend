@@ -11,17 +11,20 @@ exports.submitSAPForm = async (req, res) => {
       return res.status(400).json({ error: 'File not uploaded' });
     }
 
-    // Use the logged-in user's email as mentor (from localStorage)
-    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu'; // Default to your mentor email
+    // Validate mentor email exists in database
+    const mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor email not found in database' });
+    }
     
-    console.log('Assigning mentor:', mentorEmailToUse);
+    console.log('Assigning mentor:', mentorEmail);
 
     const newForm = new SAPForm({
       name,
       email,
       activity,
       proofUrl: `/uploads/${proof}`,
-      mentorEmail: mentorEmailToUse,
+      mentorEmail: mentorEmail,
       category: 'activity'
     });
 
@@ -87,9 +90,12 @@ exports.submitEventsForm = async (req, res) => {
       return res.status(400).json({ error: 'mentorEmail and student email are required' });
     }
 
-    // Use the provided mentor email directly (skip validation for now)
-    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu';
-    console.log('Assigning mentor (individualEvent):', mentorEmailToUse);
+    // Validate mentor email exists in database
+    const mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor email not found in database' });
+    }
+    console.log('Assigning mentor (eventsForm):', mentorEmail);
 
     const eventsInput = eventsStr ? JSON.parse(eventsStr) : [];
 
@@ -138,9 +144,12 @@ exports.submitIndividualEvent = async (req, res) => {
       return res.status(400).json({ error: 'mentorEmail and student email are required' });
     }
 
-    // Use the provided mentor email directly (skip validation for now)
-    const mentorEmailToUse = mentorEmail || 'mugilanks.23cse@kongu.edu';
-    console.log('Assigning mentor (individualEvent):', mentorEmailToUse);
+    // Validate mentor email exists in database
+    const mentor = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor email not found in database' });
+    }
+    console.log('Assigning mentor (individualEvent):', mentorEmail);
 
     const parsedStudentInfo = studentInfo ? JSON.parse(studentInfo) : {};
     const parsedEventData = eventData ? JSON.parse(eventData) : {};
@@ -155,7 +164,7 @@ exports.submitIndividualEvent = async (req, res) => {
     // Check if student already has a submission for this event
     let existingSubmission = await SAPForm.findOne({
       email,
-      mentorEmail: mentorEmailToUse,
+      mentorEmail: mentorEmail,
       'events.key': eventKey
     });
 
@@ -178,7 +187,7 @@ exports.submitIndividualEvent = async (req, res) => {
       // Create new submission or add to existing events submission
       let eventsSubmission = await SAPForm.findOne({
         email,
-        mentorEmail: mentorEmailToUse,
+        mentorEmail: mentorEmail,
         category: 'individualEvents'
       });
 
@@ -200,7 +209,7 @@ exports.submitIndividualEvent = async (req, res) => {
           email,
           activity: 'Individual Events Submission',
           category: 'individualEvents',
-          mentorEmail: mentorEmailToUse,
+          mentorEmail: mentorEmail,
           details: parsedStudentInfo,
           events: [newEvent],
           status: 'pending'
@@ -272,4 +281,51 @@ exports.updateSAPMarks = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+// Submit total marks only
+const submitTotalMarks = async (req, res) => {
+  try {
+    const { studentInfo, totalMarks, mentorEmail, email } = req.body;
+
+    // Validate mentor email exists in database
+    const mentorExists = await User.findOne({ email: mentorEmail, role: 'mentor' });
+    if (!mentorExists) {
+      return res.status(400).json({ error: 'Mentor email not found in database' });
+    }
+
+    // Create a simplified SAP form with only total marks
+    const sapForm = new SAPForm({
+      studentName: studentInfo.studentName,
+      rollNumber: studentInfo.rollNumber,
+      year: studentInfo.year,
+      section: studentInfo.section,
+      semester: studentInfo.semester,
+      academicYear: studentInfo.academicYear,
+      mentorName: studentInfo.mentorName,
+      email: email,
+      mentorEmail: mentorEmail,
+      totalMarks: totalMarks,
+      submissionType: 'total_marks_only',
+      activities: [], // Empty activities array for total marks submission
+      submittedAt: new Date()
+    });
+
+    await sapForm.save();
+    res.status(200).json({ message: 'Total marks submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting total marks:', error);
+    res.status(500).json({ error: 'Failed to submit total marks' });
+  }
+};
+
+module.exports = {
+  submitSAPForm: exports.submitSAPForm,
+  submitFullForm: exports.submitFullForm,
+  submitEventsForm: exports.submitEventsForm,
+  submitIndividualEvent: exports.submitIndividualEvent,
+  getStudentMarks: exports.getStudentMarks,
+  getSAPSubmissionsForMentor: exports.getSAPSubmissionsForMentor,
+  updateSAPMarks: exports.updateSAPMarks,
+  submitTotalMarks
 };
