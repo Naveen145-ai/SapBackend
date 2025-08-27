@@ -201,9 +201,12 @@ exports.submitIndividualEvent = async (req, res) => {
       };
 
       if (eventsSubmission) {
+        console.log('Adding event to existing submission:', eventsSubmission._id);
         eventsSubmission.events.push(newEvent);
         await eventsSubmission.save();
+        console.log('Updated existing submission with new event');
       } else {
+        console.log('Creating new events submission for student:', email);
         eventsSubmission = await SAPForm.create({
           name: parsedStudentInfo.studentName || 'Unknown',
           email,
@@ -214,13 +217,16 @@ exports.submitIndividualEvent = async (req, res) => {
           events: [newEvent],
           status: 'pending'
         });
+        console.log('Created new submission with ID:', eventsSubmission._id);
       }
       
+      console.log('Final submission saved:', eventsSubmission);
       res.status(201).json({ message: `${eventTitle} submitted successfully`, id: eventsSubmission._id });
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in submitIndividualEvent:', err);
+    console.error('Stack trace:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 };
 
@@ -313,9 +319,10 @@ const submitTotalMarks = async (req, res) => {
 
     await sapForm.save();
     res.status(200).json({ message: 'Total marks submitted successfully' });
-  } catch (error) {
-    console.error('Error submitting total marks:', error);
-    res.status(500).json({ error: 'Failed to submit total marks' });
+  } catch (err) {
+    console.error('Error submitting total marks:', err);
+    console.error('Stack trace:', err.stack);
+    res.status(500).json({ error: 'Failed to submit total marks', details: err.message });
   }
 };
 
